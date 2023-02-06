@@ -50,7 +50,11 @@ namespace LiteDB.Engine
         /// </summary>
         public void Clear()
         {
-            _indexLock.TryEnterWriteLock(-1);
+            try
+            {
+                _indexLock.TryEnterWriteLock(-1);
+            }
+            catch { }
 
             try
             {
@@ -69,7 +73,11 @@ namespace LiteDB.Engine
             }
             finally
             {
-                _indexLock.ExitWriteLock();
+                try
+                {
+                    _indexLock.ExitWriteLock();
+                }
+                catch { }
             }
         }
 
@@ -94,7 +102,11 @@ namespace LiteDB.Engine
             }
 
             // to get page position, enter _index in read mode
-            _indexLock.TryEnterReadLock(-1);
+            try
+            {
+                _indexLock.TryEnterReadLock(-1);
+            }
+            catch { }
 
             try
             {
@@ -133,7 +145,11 @@ namespace LiteDB.Engine
             }
             finally
             {
-                _indexLock.ExitReadLock();
+                try
+                {
+                    _indexLock.ExitReadLock();
+                }
+                catch { }
             }
         }
 
@@ -143,7 +159,11 @@ namespace LiteDB.Engine
         public void ConfirmTransaction(uint transactionID, ICollection<PagePosition> pagePositions)
         {
             // must lock commit operation to update WAL-Index (memory only operation)
-            _indexLock.TryEnterWriteLock(-1);
+            try
+            {
+                _indexLock.TryEnterWriteLock(-1);
+            }
+            catch { }
 
             try
             {
@@ -169,7 +189,11 @@ namespace LiteDB.Engine
             }
             finally
             {
-                _indexLock.ExitWriteLock();
+                try
+                {
+                    _indexLock.ExitWriteLock();
+                }
+                catch { }
             }
         }
 

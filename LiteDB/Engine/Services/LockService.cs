@@ -41,9 +41,16 @@ namespace LiteDB.Engine
         public void EnterTransaction()
         {
             // if current thread already in exclusive mode, just exit
-            if (_transaction.IsWriteLockHeld) return;
+            if (_transaction.IsWriteLockHeld || _transaction.IsReadLockHeld) return;
 
-            if (_transaction.TryEnterReadLock(_pragmas.Timeout) == false) throw LiteException.LockTimeout("transaction", _pragmas.Timeout);
+            var success = false;
+            try
+            {
+                success = _transaction.TryEnterReadLock(_pragmas.Timeout);
+            }
+            catch
+            {}
+            if (success == false) throw LiteException.LockTimeout("transaction", _pragmas.Timeout);
         }
 
         /// <summary>
@@ -52,9 +59,13 @@ namespace LiteDB.Engine
         public void ExitTransaction()
         {
             // if current thread are in reserved mode, do not exit transaction (will be exit from ExitExclusive)
-            if (_transaction.IsWriteLockHeld) return;
+            if (_transaction.IsWriteLockHeld || !_transaction.IsReadLockHeld) return;
 
-            _transaction.ExitReadLock();
+            try
+            {
+                _transaction.ExitReadLock();
+            }
+            catch { }
         }
 
         /// <summary>
@@ -116,7 +127,14 @@ namespace LiteDB.Engine
             }
 
             // try enter in exclusive mode - but if not possible, just exit with false
-            if (_transaction.TryEnterWriteLock(10) == false)
+            var success = false;
+            try
+            {
+                success = _transaction.TryEnterWriteLock(10);
+            }
+            catch { }
+
+            if (success == false)
             {
                 mustExit = false;
                 return false;
@@ -134,7 +152,11 @@ namespace LiteDB.Engine
         /// </summary>
         public void ExitExclusive()
         {
-            _transaction.ExitWriteLock();
+            try
+            {
+                _transaction.ExitWriteLock();
+            }
+            catch { }
         }
 
         public void Dispose()
