@@ -57,6 +57,44 @@ namespace LiteDB.Engine
             }
         }
 
+        protected IEnumerable<BsonDocument> LoadDocumentForUnOrderedQuery(IEnumerable<IndexNode> nodes, QueryPlan query)
+        {
+            var remainingToSkip = query.Offset;
+            var remainingToTake = query.Limit;
+            foreach (var node in nodes)
+            {
+                var doc = _lookup.Load(node);
+                foreach (var path in query.IncludeBefore)
+                {
+                    doc = this.Include(doc, path);
+                }
+
+                // filter results according expressions                
+                foreach (var expr in query.Filters)
+                {
+                    doc = this.Filter(doc, expr);
+                    if (doc == null)
+                        break;
+                }
+
+                _transaction.ClearSnapShots();
+
+                if (doc != null)
+                {
+                    if (remainingToSkip > 0)
+                        remainingToSkip--;
+                    else if (remainingToTake > 0)
+                    {
+                        remainingToTake--;
+                        yield return doc;
+                    }
+                }
+
+                // check if transaction all full of pages to clear before continue
+                _transaction.SafepointForPipes();
+            }
+        }
+
         /// <summary>
         /// INCLUDE: Do include in result document according path expression - Works only with DocumentLookup
         /// </summary>

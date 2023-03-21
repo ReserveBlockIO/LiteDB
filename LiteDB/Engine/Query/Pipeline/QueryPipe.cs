@@ -28,17 +28,8 @@ namespace LiteDB.Engine
         /// </summary>
         public override IEnumerable<BsonDocument> Pipe(IEnumerable<IndexNode> nodes, QueryPlan query)
         {
-            // starts pipe loading document
-            if (query.OrderBy == null)
-            {
-                // pipe: apply offset (no orderby)
-                if (query.Offset > 0) nodes = nodes.Skip(query.Offset);
-
-                // pipe: apply limit (no orderby)
-                if (query.Limit < int.MaxValue) nodes = nodes.Take(query.Limit);
-            }
-
-            var source = this.LoadDocument(nodes, query);
+            var source = query.OrderBy != null ? this.LoadDocument(nodes, query) : 
+                this.LoadDocumentForUnOrderedQuery(nodes, query);
 
             if (query.OrderBy != null)
             {

@@ -138,7 +138,7 @@ namespace LiteDB
         /// <summary>
         /// Find documents inside a collection using predicate expression.
         /// </summary>
-        IEnumerable<T> Find(BsonExpression predicate, int skip = 0, int limit = int.MaxValue);
+        IEnumerable<T> Find(BsonExpression predicate, int skip = 0, int limit = int.MaxValue, int order = 1);
 
         /// <summary>
         /// Find documents inside a collection using query definition.

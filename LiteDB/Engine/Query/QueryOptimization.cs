@@ -55,7 +55,7 @@ namespace LiteDB.Engine
             this.DefineQueryFields();
 
             // define Index, IndexCost, IndexExpression, IsIndexKeyOnly + Where (filters - index)
-            this.DefineIndex();
+            this.DefineIndex(_query.Order);
 
             // define OrderBy
             this.DefineOrderBy();
@@ -165,7 +165,7 @@ namespace LiteDB.Engine
 
         #region Index Definition
 
-        private void DefineIndex()
+        private void DefineIndex(int order)
         {
             // selected expression to be used as index (from _terms)
             BsonExpression selected = null;
@@ -188,7 +188,7 @@ namespace LiteDB.Engine
                     // if has no index to use, use full scan over _id
                     var pk = _snapshot.CollectionPage.PK;
 
-                    _queryPlan.Index = new IndexAll("_id", Query.Ascending);
+                    _queryPlan.Index = new IndexAll("_id", order);
                     _queryPlan.IndexCost = _queryPlan.Index.GetCost(pk);
                     _queryPlan.IndexExpression = "$._id";
                 }
