@@ -27,21 +27,9 @@ namespace LiteDB.Engine
         /// - Select
         /// </summary>
         public override IEnumerable<BsonDocument> Pipe(IEnumerable<IndexNode> nodes, QueryPlan query)
-        {
+        {            
             // starts pipe loading document
-            var source = this.LoadDocument(nodes);
-
-            // do includes in result before filter
-            foreach (var path in query.IncludeBefore)
-            {
-                source = this.Include(source, path);
-            }
-
-            // filter results according expressions
-            foreach (var expr in query.Filters)
-            {
-                source = this.Filter(source, expr);
-            }
+            var source = this.LoadDocument(nodes, query);
 
             if (query.OrderBy != null)
             {

@@ -29,21 +29,43 @@ namespace LiteDB.Engine
         public abstract IEnumerable<BsonDocument> Pipe(IEnumerable<IndexNode> nodes, QueryPlan query);
 
         // load documents from document loader
-        protected IEnumerable<BsonDocument> LoadDocument(IEnumerable<IndexNode> nodes)
+        protected IEnumerable<BsonDocument> LoadDocument(IEnumerable<IndexNode> nodes, QueryPlan query)
         {
             foreach (var node in nodes)
             {
-                yield return _lookup.Load(node);
+                var doc = _lookup.Load(node);
+                foreach (var path in query.IncludeBefore)
+                {
+                    doc = this.Include(doc, path);
+                }
+
+                // filter results according expressions                
+                foreach (var expr in query.Filters)
+                {
+                    doc = this.Filter(doc, expr);
+                }
+
+                _transaction.ClearSnapShots();
+
+                if (doc != null)
+                    yield return doc;
 
                 // check if transaction all full of pages to clear before continue
-                _transaction.Safepoint();
+                _transaction.SafepointForPipes();
             }
         }
 
         /// <summary>
         /// INCLUDE: Do include in result document according path expression - Works only with DocumentLookup
         /// </summary>
+        /// 
         protected IEnumerable<BsonDocument> Include(IEnumerable<BsonDocument> source, BsonExpression path)
+        {
+            foreach (var doc in source)
+                yield return Include(doc, path);
+        }
+
+        protected BsonDocument Include(BsonDocument doc, BsonExpression path)
         {
             // cached services
             string last = null;
@@ -53,32 +75,30 @@ namespace LiteDB.Engine
             CollectionIndex index = null;
             IDocumentLookup lookup = null;
 
-            foreach (var doc in source)
-            {
-                foreach (var value in path.Execute(doc, _pragmas.Collation)
-                                        .Where(x => x.IsDocument || x.IsArray)
-                                        .ToList())
-                {
-                    // if value is document, convert this ref document into full document (do another query)
-                    if (value.IsDocument)
-                    {
-                        DoInclude(value.AsDocument);
-                    }
-                    else
-                    {
-                        // if value is array, do same per item
-                        foreach(var item in value.AsArray
-                            .Where(x => x.IsDocument)
-                            .Select(x => x.AsDocument))
-                        {
-                            DoInclude(item);
-                        }
-                    }
 
+            foreach (var value in path.Execute(doc, _pragmas.Collation)
+                                    .Where(x => x.IsDocument || x.IsArray)
+                                    .ToList())
+            {
+                // if value is document, convert this ref document into full document (do another query)
+                if (value.IsDocument)
+                {
+                    DoInclude(value.AsDocument);
+                }
+                else
+                {
+                    // if value is array, do same per item
+                    foreach(var item in value.AsArray
+                        .Where(x => x.IsDocument)
+                        .Select(x => x.AsDocument))
+                    {
+                        DoInclude(item);
+                    }
                 }
 
-                yield return doc;
             }
+
+            return doc;            
 
             void DoInclude(BsonDocument value)
             {
@@ -135,18 +155,17 @@ namespace LiteDB.Engine
         /// <summary>
         /// WHERE: Filter document according expression. Expression must be an Bool result
         /// </summary>
-        protected IEnumerable<BsonDocument> Filter(IEnumerable<BsonDocument> source, BsonExpression expr)
+        protected BsonDocument Filter(BsonDocument doc, BsonExpression expr)
         {
-            foreach(var doc in source)
-            {
-                // checks if any result of expression is true
-                var result = expr.ExecuteScalar(doc, _pragmas.Collation);
+            // checks if any result of expression is true
+            var result = expr.ExecuteScalar(doc, _pragmas.Collation);
 
-                if(result.IsBoolean && result.AsBoolean)
-                {
-                    yield return doc;
-                }
+            if(result.IsBoolean && result.AsBoolean)
+            {
+                return doc;
             }
+
+            return null;
         }
 
         /// <summary>

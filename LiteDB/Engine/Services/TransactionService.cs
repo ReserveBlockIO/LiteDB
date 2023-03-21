@@ -147,6 +147,35 @@ namespace LiteDB.Engine
             }
         }
 
+        public void SafepointForPipes()
+        {
+            if (_state != TransactionState.Active) throw new LiteException(0, "This transaction are invalid state");
+
+            if (_monitor.CheckSafepoint(this))
+            {
+                LOG($"safepoint flushing transaction pages: {_transPages.TransactionSize}", "TRANSACTION");
+
+                // if any snapshot are writable, persist pages
+                if (_mode == LockMode.Write)
+                {
+                    this.PersistDirtyPages(false);
+                }
+
+                // there is no local pages in cache and all dirty pages are in log file
+                _transPages.TransactionSize = 0;
+            }
+        }
+
+        public void ClearSnapShots()
+        {
+            if (_state != TransactionState.Active) throw new LiteException(0, "This transaction are invalid state");
+
+            foreach (var snapshot in _snapshots.Values)
+            {
+                snapshot.Clear();
+            }
+        }
+
         /// <summary>
         /// Persist all dirty in-memory pages (in all snapshots) and clear local pages list (even clean pages)
         /// </summary>

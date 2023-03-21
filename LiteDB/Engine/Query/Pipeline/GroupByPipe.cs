@@ -28,13 +28,7 @@ namespace LiteDB.Engine
         public override IEnumerable<BsonDocument> Pipe(IEnumerable<IndexNode> nodes, QueryPlan query)
         {
             // starts pipe loading document
-            var source = this.LoadDocument(nodes);
-
-            // filter results according filter expressions
-            foreach (var expr in query.Filters)
-            {
-                source = this.Filter(source, expr);
-            }
+            var source = this.LoadDocument(nodes, query);
 
             // run orderBy used in GroupBy (if not already ordered by index)
             if (query.OrderBy != null)
