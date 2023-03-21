@@ -43,6 +43,8 @@ namespace LiteDB.Engine
                 foreach (var expr in query.Filters)
                 {
                     doc = this.Filter(doc, expr);
+                    if (doc == null)
+                        break;
                 }
 
                 _transaction.ClearSnapShots();
