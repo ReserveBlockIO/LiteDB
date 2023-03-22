@@ -79,7 +79,11 @@ namespace LiteDB.Engine
             var remainingToSkip = query.Offset;
             var remainingToTake = query.Limit;
 
-            var PrevPageId = nodes.First().DataBlock.PageID;
+            var FirstNode = nodes.FirstOrDefault();
+            if (FirstNode == null)
+                yield break;
+
+            var PrevPageId = FirstNode.DataBlock.PageID;
             foreach (var node in nodes)
             {
                 var doc = _lookup.Load(node);
