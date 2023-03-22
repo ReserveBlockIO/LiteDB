@@ -162,9 +162,10 @@ namespace LiteDB.Engine
             while (address != PageAddress.Empty)
             {
                 var dataPage = _snapshot.GetPage<DataPage>(address.PageID);
-
+                
                 var block = dataPage.GetBlock(address.Index);
 
+                block.Buffer.DataPage = dataPage;
                 yield return block.Buffer;
 
                 address = block.NextBlock;

@@ -24,11 +24,13 @@ namespace LiteDB
         /// </summary>
         public IEnumerable<T> Find(BsonExpression predicate, int skip = 0, int limit = int.MaxValue, int order = 1)
         {
-            if (predicate == null) throw new ArgumentNullException(nameof(predicate));
-                        
-            return this.Query()
-                .Include(_includes)
-                .Where(predicate)
+            var query = this.Query()
+                .Include(_includes);
+
+            if (predicate != null)
+                query = query.Where(predicate);
+
+            return query
                 .OrderBy(null, order)
                 .Skip(skip)
                 .Limit(limit)                

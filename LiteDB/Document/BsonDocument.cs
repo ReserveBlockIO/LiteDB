@@ -36,7 +36,7 @@ namespace LiteDB
             {
                 this.Add(element);
             }
-        }
+        }               
 
         public new IDictionary<string, BsonValue> RawValue => base.RawValue as IDictionary<string, BsonValue>;
 
@@ -101,6 +101,14 @@ namespace LiteDB
         public int Count => this.RawValue.Count;
 
         public bool IsReadOnly => false;
+
+        internal PageBuffer Buffer = null;
+        
+        public void Release()
+        {
+            if(Buffer != null)
+                Buffer.Release();
+        }
 
         public bool ContainsKey(string key) => this.RawValue.ContainsKey(key);
 

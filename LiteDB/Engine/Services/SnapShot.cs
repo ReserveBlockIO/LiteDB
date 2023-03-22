@@ -30,13 +30,13 @@ namespace LiteDB.Engine
         private readonly CollectionPage _collectionPage;
 
         // local page cache - contains only pages about this collection (but do not contains CollectionPage - use this.CollectionPage)
-        private readonly Dictionary<uint, BasePage> _localPages = new Dictionary<uint, BasePage>();
+        public readonly Dictionary<uint, BasePage> _localPages = new Dictionary<uint, BasePage>();
 
         // expose
         public LockMode Mode => _mode;
         public string CollectionName => _collectionName;
         public CollectionPage CollectionPage => _collectionPage;
-        public ICollection<BasePage> LocalPages => _localPages.Values;
+        public ICollection<BasePage> LocalPages => _localPages.Values;       
         public int ReadVersion => _readVersion;
 
         public Snapshot(LockMode mode, string collectionName, HeaderPage header, uint transactionID, TransactionPages transPages, LockService locker, WalIndexService walIndex, DiskReader reader, bool addIfNotExists)
@@ -195,7 +195,7 @@ namespace LiteDB.Engine
                 // read page from log file
                 var buffer = _reader.ReadPage(walPosition.Position, _mode == LockMode.Write, FileOrigin.Log);
                 var dirty = BasePage.ReadPage<T>(buffer);
-
+                
                 origin = FileOrigin.Log;
                 position = walPosition.Position;
                 walVersion = _readVersion;

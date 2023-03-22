@@ -54,6 +54,8 @@ namespace LiteDB.Engine
 
         #region Basic Read
 
+        public DataPage DataPage => _current.DataPage;
+
         /// <summary>
         /// Move forward in current segment. If array segment finishes, open next segment
         /// Returns true if moved to another segment - returns false if continues in the same segment

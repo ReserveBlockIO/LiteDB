@@ -1,4 +1,5 @@
-﻿using System;
+﻿using LiteDB.Engine;
+using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.ComponentModel;
@@ -20,6 +21,7 @@ namespace LiteDB
         public int Offset { get; }
         public int Count { get; }
         public byte[] Array { get; }
+        public DataPage DataPage;
 
         public BufferSlice(byte[] array, int offset, int count)
         {

@@ -31,9 +31,23 @@ namespace LiteDB.Engine
         // load documents from document loader
         protected IEnumerable<BsonDocument> LoadDocument(IEnumerable<IndexNode> nodes, QueryPlan query)
         {
+            BsonDocument previousDoc = null;            
+            var PrevPageId = nodes.First().DataBlock.PageID;
             foreach (var node in nodes)
             {
                 var doc = _lookup.Load(node);
+                if (PrevPageId != node.DataBlock.PageID)
+                {
+                    previousDoc.Release();
+                    foreach (var snapshot in _transaction.Snapshots)
+                    {
+                        snapshot._localPages.Remove(PrevPageId);
+                    }
+                }
+
+                previousDoc = doc;
+                PrevPageId = node.DataBlock.PageID;
+
                 foreach (var path in query.IncludeBefore)
                 {
                     doc = this.Include(doc, path);
@@ -47,23 +61,40 @@ namespace LiteDB.Engine
                         break;
                 }
 
-                _transaction.ClearSnapShots();
-
                 if (doc != null)
+                {
                     yield return doc;
+                }
 
                 // check if transaction all full of pages to clear before continue
                 _transaction.SafepointForPipes();
             }
+
+            _transaction.Safepoint();
         }
 
         protected IEnumerable<BsonDocument> LoadDocumentForUnOrderedQuery(IEnumerable<IndexNode> nodes, QueryPlan query)
         {
+            BsonDocument previousDoc = null;
             var remainingToSkip = query.Offset;
             var remainingToTake = query.Limit;
+
+            var PrevPageId = nodes.First().DataBlock.PageID;
             foreach (var node in nodes)
             {
                 var doc = _lookup.Load(node);
+                if (PrevPageId != node.DataBlock.PageID)
+                {
+                    previousDoc.Release();
+                    foreach (var snapshot in _transaction.Snapshots)
+                    {
+                        snapshot._localPages.Remove(PrevPageId);
+                    }
+                }
+
+                previousDoc = doc;
+                PrevPageId = node.DataBlock.PageID;
+
                 foreach (var path in query.IncludeBefore)
                 {
                     doc = this.Include(doc, path);
@@ -76,9 +107,7 @@ namespace LiteDB.Engine
                     if (doc == null)
                         break;
                 }
-
-                _transaction.ClearSnapShots();
-
+                
                 if (doc != null)
                 {
                     if (remainingToSkip > 0)
@@ -90,9 +119,14 @@ namespace LiteDB.Engine
                     }
                 }
 
+                if (remainingToTake <= 0)
+                    break;
+
                 // check if transaction all full of pages to clear before continue
                 _transaction.SafepointForPipes();
             }
+
+            _transaction.Safepoint();            
         }
 
         /// <summary>

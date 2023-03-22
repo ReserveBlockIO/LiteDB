@@ -30,9 +30,11 @@ namespace LiteDB.Engine
         {
             using (var reader = new BufferReader(_data.Read(rawId), _utcDate))
             {
+                var dataPage = reader.DataPage;
                 var doc = reader.ReadDocument(_fields);
 
                 doc.RawId = rawId;
+                doc.Buffer = dataPage.Buffer;
 
                 return doc;
             }
