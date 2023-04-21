@@ -70,7 +70,11 @@ namespace LiteDB.Engine
                 _transaction.SafepointForPipes();
             }
 
-            _transaction.Safepoint();
+            try
+            {
+                _transaction.Safepoint();
+            }
+            catch { }
         }
 
         protected IEnumerable<BsonDocument> LoadDocumentForUnOrderedQuery(IEnumerable<IndexNode> nodes, QueryPlan query)
@@ -130,7 +134,11 @@ namespace LiteDB.Engine
                 _transaction.SafepointForPipes();
             }
 
-            _transaction.Safepoint();            
+            try
+            {
+                _transaction.Safepoint();
+            }
+            catch { }
         }
 
         /// <summary>
